@@ -10,6 +10,7 @@ parser.add_argument('-upscale_factor', default=2, type=int)
 parser.add_argument('-num_epochs', default=100, type=int)
 parser.add_argument('-batch_size', default=32, type=int)
 parser.add_argument('-seed', default=123, type=int)
+parser.add_argument('-lr', default=0.01, type=float)
 args = parser.parse_args()
 tf.random.set_seed(args.seed)
 model = ESPCN(args.upscale_factor)
@@ -20,7 +21,7 @@ test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
 
 # Loss & optimizer
 loss_object = tf.keras.losses.MeanSquaredError()
-optimizer = tf.keras.optimizers.Adam()
+optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
 
 # Keras metrics
 train_loss = tf.keras.metrics.Mean(name='train_loss')
