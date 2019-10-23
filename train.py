@@ -11,13 +11,12 @@ parser.add_argument('-num_epochs', default=100, type=int)
 parser.add_argument('-batch_size', default=32, type=int)
 parser.add_argument('-seed', default=123, type=int)
 args = parser.parse_args()
-assert args.device >= 0
 tf.random.set_seed(args.seed)
 model = ESPCN(args.upscale_factor)
 
 # Dataset
-train_dataset = get_training_set(args.upscale_factor)
-test_dataset = get_test_set(args.upscale_factor)
+train_dataset = get_training_set(args.upscale_factor).batch(args.batch_size)
+test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
 
 # Loss & optimizer
 loss_object = tf.keras.losses.MSE()
