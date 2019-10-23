@@ -3,6 +3,7 @@ import tensorflow as tf
 from model import ESPCN
 from data import get_training_set, get_test_set
 import logging
+from os.path import join
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [INFO] %(message)s')
 
 parser = argparse.ArgumentParser()
@@ -11,6 +12,7 @@ parser.add_argument('-num_epochs', default=100, type=int)
 parser.add_argument('-batch_size', default=32, type=int)
 parser.add_argument('-seed', default=123, type=int)
 parser.add_argument('-lr', default=0.01, type=float)
+parser.add_argument('-save_dir', default='saved_models', type=str)
 args = parser.parse_args()
 tf.random.set_seed(args.seed)
 model = ESPCN(args.upscale_factor)
@@ -48,4 +50,7 @@ for epoch in range(args.num_epochs):
         train_step(ds_image, image)
     for test_ds_image, test_image in test_dataset:
         test_step(test_ds_image, test_image)
+
+    save_path = join(args.save_dir, str(epoch))
+    tf.saved_model.save(model, save_path)
     logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss.result(), test_loss.result()))
