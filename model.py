@@ -3,6 +3,7 @@ from tensorflow import keras
 
 class ESPCN(keras.Model):
     def __init__(self, upscale_factor):
+        super().__init__()
         self.conv1 = keras.layers.Conv2D(64, 5, padding='same', activation='tanh', kernel_initializer='orthogonal')
         self.conv2 = keras.layers.Conv2D(64, 3, padding='same', activation='tanh', kernel_initializer='orthogonal')
         self.conv3 = keras.layers.Conv2D(64, 3, padding='same', activation='tanh', kernel_initializer='orthogonal')
