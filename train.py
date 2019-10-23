@@ -124,7 +124,8 @@ for epoch in range(args.num_epochs):
     if args.use_tpu:
         with tpu_strategy.scope():
             for inputs in train_dataset:
-                train_loss_sum += train_step(inputs)
+                #train_loss_sum += train_step(inputs)
+                print(train_step(inputs))
                 train_cnt += 1
     else:
         for ds_image, image in train_dataset:
