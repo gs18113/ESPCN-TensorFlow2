@@ -43,14 +43,11 @@ else:
 
 # Loss & optimizer
 optimizer = None
-loss_object = None
 if args.use_tpu:
     with tpu_strategy.scope():
         optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
-        loss_object = tf.keras.losses.MeanSquaredError()
 else:
     optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
-    loss_object = tf.keras.losses.MeanSquaredError()
 
 # Dataset
 train_dataset = None
@@ -74,7 +71,7 @@ if args.use_tpu:
             ds_image, image = inputs
             with tf.GradientTape() as tape:
                 generated_image = model(ds_image)
-                loss_one = loss_object(generated_image, image)
+                loss_one = tf.losses.MSE(generated_image, image)
                 loss = loss_one * (1.0 / args.batch_size)
             gradients = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
@@ -92,7 +89,7 @@ else:
     def train_step_normal(ds_image, image):
         with tf.GradientTape() as tape:
             generated_image = model(ds_image)
-            loss = loss_object(generated_image, image)
+            loss = tf.losses.MSE(generated_image, image)
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         return loss
@@ -104,7 +101,7 @@ if args.use_tpu:
         def step_fn(inputs):
             ds_image, image = inputs
             generated_image = model(ds_image)
-            loss_one = loss_object(generated_image, image)
+            loss_one = tf.losses.MSE(generated_image, image)
             return loss_one
 
         per_example_losses = tpu_strategy.experimental_run_v2(
@@ -117,21 +114,34 @@ else:
     @tf.function
     def test_step_normal(ds_image, image):
         generated_image = model(ds_image)
-        loss = loss_object(generated_image, image)
+        loss = tf.losses.MSE(generated_image, image)
         return loss
     test_step = test_step_normal
 
 for epoch in range(args.num_epochs):
     train_loss_sum = 0
     train_cnt = 0
-    for ds_image, image in train_dataset:
-        train_loss_sum += train_step(ds_image, image)
-        train_cnt += 1
+    if args.use_tpu:
+        with tpu_strategy.scope():
+            for inputs in train_dataset:
+                train_loss_sum += train_step(inputs)
+                train_cnt += 1
+    else:
+        for ds_image, image in train_dataset:
+            train_loss_sum += train_step(ds_image, image)
+            train_cnt += 1
 
     test_loss_sum = 0
-    for test_ds_image, test_image in test_dataset:
-        test_loss_sum += test_step(test_ds_image, test_image)
-        test_cnt += 1
+    test_cnt = 0
+    if args.use_tpu:
+        with tpu_strategy.scope():
+            for inputs in test_dataset:
+                test_loss_sum += test_step(inputs)
+                test_cnt += 1
+    else:
+        for test_ds_image, test_image in test_dataset:
+            test_loss_sum += test_step(test_ds_image, test_image)
+            test_cnt += 1
 
     save_path = join(args.save_dir, str(epoch))
     tf.saved_model.save(model, save_path)
