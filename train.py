@@ -27,6 +27,12 @@ parser.add_argument('-use_tpu', type=str2bool, nargs='?', default=False)
 args = parser.parse_args()
 tf.random.set_seed(args.seed)
 
+lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+    initial_learning_rate,
+    decay_steps=100000,
+    decay_rate=0.96,
+    staircase=True)
+
 # TPU objects
 tpu_strategy = None
 
@@ -71,7 +77,7 @@ if args.use_tpu:
             ds_image, image = inputs
             with tf.GradientTape() as tape:
                 generated_image = model(ds_image)
-                loss_one = tf.math.reduce_mean(tf.math.squared_difference(generated_image, image))
+                loss_one = tf.reduce_sum(tf.reduce_mean(tf.math.squared_difference(generated_image, tf.reshape(image, [-1, 256*256])), 1))
                 loss = loss_one * (1.0 / args.batch_size)
             gradients = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
@@ -89,7 +95,7 @@ else:
     def train_step_normal(ds_image, image):
         with tf.GradientTape() as tape:
             generated_image = model(ds_image)
-            loss = tf.math.reduce_mean(tf.math.squared_difference(generated_image, image))
+            loss = tf.reduce_sum(tf.reduce_mean(tf.math.squared_difference(generated_image, tf.reshape(image, [-1, 256*256])), 1))
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         return loss
@@ -101,7 +107,7 @@ if args.use_tpu:
         def step_fn(inputs):
             ds_image, image = inputs
             generated_image = model(ds_image)
-            loss_one = tf.math.reduce_mean(tf.math.squared_difference(generated_image, image))
+            loss_one = tf.reduce_sum(tf.reduce_mean(tf.math.squared_difference(generated_image, tf.reshape(image, [-1, 256*256])), 1))
             return loss_one
 
         per_example_losses = tpu_strategy.experimental_run_v2(
@@ -114,7 +120,7 @@ else:
     @tf.function
     def test_step_normal(ds_image, image):
         generated_image = model(ds_image)
-        loss = tf.math.reduce_mean(tf.math.squared_difference(generated_image, image))
+        loss = tf.reduce_sum(tf.reduce_mean(tf.math.squared_difference(generated_image, tf.reshape(image, [-1, 256*256])), 1))
         return loss
     test_step = test_step_normal
 
