@@ -16,4 +16,5 @@ class ESPCN(keras.Model):
         x = self.conv3(x)
         x = self.conv4(x)
         x = tf.nn.depth_to_space(x, self.upscale_factor)
+        x = tf.reshape(x, [-1, 3, 256, 256])
         return x

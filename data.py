@@ -41,7 +41,7 @@ def get_image_from_file(filename, crop_size=256):
     downsampled_image = tf.image.resize(original_image, [crop_size // 2, crop_size // 2])
     # convert to 0~1 and change HWC to CHW 
     # (because the network accepts single channel. 
-    # See model.py line 12 for better understanding.)
+    # See model.py line 13 for better understanding.)
     original_image = tf.transpose(original_image / 255.0, [2, 0, 1])
     downsampled_image = tf.transpose(downsampled_image / 255.0, [2, 0, 1])
     return downsampled_image, original_image
