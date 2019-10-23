@@ -27,11 +27,6 @@ parser.add_argument('-use_tpu', type=str2bool, nargs='?', default=False)
 args = parser.parse_args()
 tf.random.set_seed(args.seed)
 
-lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
-    initial_learning_rate,
-    decay_steps=100000,
-    decay_rate=0.96,
-    staircase=True)
 
 # TPU objects
 tpu_strategy = None
@@ -48,12 +43,17 @@ else:
     model = ESPCN(args.upscale_factor)
 
 # Loss & optimizer
+lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+    args.lr,
+    decay_steps=400,
+    decay_rate=0.99,
+    staircase=True)
 optimizer = None
 if args.use_tpu:
     with tpu_strategy.scope():
-        optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
 else:
-    optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
 
 # Dataset
 train_dataset = None
