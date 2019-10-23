@@ -40,16 +40,18 @@ def get_image_from_file(filename, crop_size=256):
     original_image = tf.image.crop_to_bounding_box(image, offset_height, offset_width, crop_size, crop_size)
     downsampled_image = tf.image.resize(original_image, [crop_size // 2, crop_size // 2])
     return original_image, downsampled_image
-    
 
 def get_training_set(upscale_factor):
     root_dir = download_bsd300()
     train_dir = join(root_dir, "train")
-    crop_size = calculate_valid_crop_size(256, upscale_factor)
     names = Dataset.list_files(train_dir)
-    images = Dataset.map(get_image_from_file)
+    images = names.map(get_image_from_file)
+    return images
 
 def get_test_set(upscale_factor):
     root_dir = download_bsd300()
     test_dir = join(root_dir, "test")
-    crop_size = calculate_valid_crop_size(256, upscale_factor)
+    names = Dataset.list_files(test_dir)
+    images = names.map(get_image_from_file)
+    return images
+    
