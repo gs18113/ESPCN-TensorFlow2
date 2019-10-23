@@ -6,6 +6,16 @@ import logging
 from os.path import join
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [INFO] %(message)s')
 
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-upscale_factor', default=2, type=int)
 parser.add_argument('-num_epochs', default=100, type=int)
@@ -13,9 +23,20 @@ parser.add_argument('-batch_size', default=32, type=int)
 parser.add_argument('-seed', default=123, type=int)
 parser.add_argument('-lr', default=0.01, type=float)
 parser.add_argument('-save_dir', default='saved_models', type=str)
+parser.add_argument('-use_tpu', type=str2bool, nargs='?', default=False)
 args = parser.parse_args()
 tf.random.set_seed(args.seed)
-model = ESPCN(args.upscale_factor)
+
+model = None
+if args.use_tpu:
+    cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver()
+    tf.config.experimental_connect_to_host(cluster_resolver.master())
+    tf.tpu.experimental.initialize_tpu_system(cluster_resolver)
+    tpu_strategy = tf.distribute.experimental.TPUStrategy(cluster_resolver)
+    with tpu_strategy.scope():
+        model = ESPCN(args.upscale_factor)
+else:
+    model = ESPCN(args.upscale_factor)
 
 # Dataset
 train_dataset = get_training_set(args.upscale_factor).batch(args.batch_size)
@@ -28,6 +49,7 @@ optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
 # Keras metrics
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 test_loss = tf.keras.metrics.Mean(name='test_loss')
+
 
 @tf.function
 def train_step(ds_image, image):
