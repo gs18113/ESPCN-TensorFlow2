@@ -48,14 +48,14 @@ def get_image_from_file(filename, crop_size=256):
 
 def get_training_set(upscale_factor):
     root_dir = download_bsd300()
-    train_dir = join(root_dir, "train/*.jpeg")
+    train_dir = join(root_dir, "train/*.jpg")
     names = tf.data.Dataset.list_files(train_dir)
     images = names.map(get_image_from_file)
     return images
 
 def get_test_set(upscale_factor):
     root_dir = download_bsd300()
-    test_dir = join(root_dir, "test/*.jpeg")
+    test_dir = join(root_dir, "test/*.jpg")
     names = tf.data.Dataset.list_files(test_dir)
     images = names.map(get_image_from_file)
     return images
