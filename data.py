@@ -27,7 +27,7 @@ def download_bsd300(dest="image_data"):
 
         remove(file_path)
 
-    return output_image_dir
+    return join(output_image_dir, "images")
 
 def get_image_from_file(filename, crop_size=256):
     image = tf.io.read_file(filename)
