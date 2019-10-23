@@ -10,7 +10,7 @@ def download_bsd300(dest="image_data"):
     output_image_dir = join(dest, "BSDS300")
 
     if not exists(output_image_dir):
-        makedirs(dest)
+        makedirs(output_image_dir)
         url = "http://www2.eecs.berkeley.edu/Research/Projects/CS/vision/bsds/BSDS300-images.tgz"
         print("downloading url ", url)
 
@@ -31,7 +31,7 @@ def download_bsd300(dest="image_data"):
 
 def get_image_from_file(filename, crop_size=256):
     image = tf.io.read_file(filename)
-    image = tf.image.decode_png(image)
+    image = tf.image.decode_jpeg(image)
     image= tf.cast(image, tf.float32)
     image_height = tf.shape(image)[0]
     image_width = tf.shape(image)[1]
@@ -48,14 +48,14 @@ def get_image_from_file(filename, crop_size=256):
 
 def get_training_set(upscale_factor):
     root_dir = download_bsd300()
-    train_dir = join(root_dir, "train")
+    train_dir = join(root_dir, "train/*.jpeg")
     names = tf.data.Dataset.list_files(train_dir)
     images = names.map(get_image_from_file)
     return images
 
 def get_test_set(upscale_factor):
     root_dir = download_bsd300()
-    test_dir = join(root_dir, "test")
+    test_dir = join(root_dir, "test/*.jpeg")
     names = tf.data.Dataset.list_files(test_dir)
     images = names.map(get_image_from_file)
     return images
