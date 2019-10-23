@@ -19,7 +19,7 @@ train_dataset = get_training_set(args.upscale_factor).batch(args.batch_size)
 test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
 
 # Loss & optimizer
-loss_object = tf.keras.losses.MSE()
+loss_object = tf.keras.losses.MeanSquaredError()
 optimizer = tf.keras.optimizers.Adam()
 
 # Keras metrics
