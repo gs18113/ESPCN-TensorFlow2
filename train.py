@@ -72,7 +72,7 @@ if args.use_tpu:
             with tf.GradientTape() as tape:
                 generated_image = model(ds_image)
                 loss_one = tf.math.reduce_mean(tf.math.squared_difference(generated_image, image))
-                loss = loss_one * (1.0f / args.batch_size)
+                loss = loss_one * (1.0 / args.batch_size)
             gradients = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             return loss_one
