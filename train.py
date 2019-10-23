@@ -27,6 +27,9 @@ parser.add_argument('-use_tpu', type=str2bool, nargs='?', default=False)
 args = parser.parse_args()
 tf.random.set_seed(args.seed)
 
+# TPU objects
+tpu_strategy = None
+
 model = None
 if args.use_tpu:
     cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver()
@@ -38,41 +41,98 @@ if args.use_tpu:
 else:
     model = ESPCN(args.upscale_factor)
 
-# Dataset
-train_dataset = get_training_set(args.upscale_factor).batch(args.batch_size)
-test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
-
 # Loss & optimizer
-loss_object = tf.keras.losses.MeanSquaredError()
-optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
+optimizer = None
+loss_object = None
+if args.use_tpu:
+    with tpu_strategy.scope():
+        optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
+        loss_object = tf.keras.losses.MeanSquaredError()
+else:
+    optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
+    loss_object = tf.keras.losses.MeanSquaredError()
 
-# Keras metrics
-train_loss = tf.keras.metrics.Mean(name='train_loss')
-test_loss = tf.keras.metrics.Mean(name='test_loss')
+# Dataset
+train_dataset = None
+test_dataset = None
+if args.use_tpu:
+    with tpu_strategy.scope():
+        train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
+        test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
+else:
+    train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
+    test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
 
+# Train & test steps
+train_step = None
+test_step = None
 
-@tf.function
-def train_step(ds_image, image):
-    with tf.GradientTape() as tape:
+if args.use_tpu:
+    @tf.function
+    def train_step_tpu(dist_inputs):
+        def step_fn(inputs):
+            ds_image, image = inputs
+            with tf.GradientTape() as tape:
+                generated_image = model(ds_image)
+                loss_one = loss_object(generated_image, image)
+                loss = loss_one * (1.0 / args.batch_size)
+            gradients = tape.gradient(loss, model.trainable_variables)
+            optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+            return loss_one
+
+        per_example_losses = tpu_strategy.experimental_run_v2(
+            step_fn, args=(dist_inputs, ))
+        mean_loss = tpu_strategy.reduce(
+            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
+        return mean_loss
+    train_step = train_step_tpu
+            
+else:
+    @tf.function
+    def train_step_normal(ds_image, image):
+        with tf.GradientTape() as tape:
+            generated_image = model(ds_image)
+            loss = loss_object(generated_image, image)
+        gradients = tape.gradient(loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        return loss
+    train_step = train_step_normal
+
+if args.use_tpu:
+    @tf.function
+    def test_step_tpu(dist_inputs):
+        def step_fn(inputs):
+            ds_image, image = inputs
+            generated_image = model(ds_image)
+            loss_one = loss_object(generated_image, image)
+            return loss_one
+
+        per_example_losses = tpu_strategy.experimental_run_v2(
+            step_fn, args=(dist_inputs, ))
+        mean_loss = tpu_strategy.reduce(
+            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
+        return mean_loss
+    test_step = test_step_tpu
+else:
+    @tf.function
+    def test_step_normal(ds_image, image):
         generated_image = model(ds_image)
         loss = loss_object(generated_image, image)
-    gradients = tape.gradient(loss, model.trainable_variables)
-    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
-    train_loss(loss)
-
-@tf.function
-def test_step(ds_image, image):
-    generated_image = model(ds_image)
-    t_loss = loss_object(generated_image, image)
-    test_loss(t_loss)
+        return loss
+    test_step = test_step_normal
 
 for epoch in range(args.num_epochs):
+    train_loss_sum = 0
+    train_cnt = 0
     for ds_image, image in train_dataset:
-        train_step(ds_image, image)
+        train_loss_sum += train_step(ds_image, image)
+        train_cnt += 1
+
+    test_loss_sum = 0
     for test_ds_image, test_image in test_dataset:
-        test_step(test_ds_image, test_image)
+        test_loss_sum += test_step(test_ds_image, test_image)
+        test_cnt += 1
 
     save_path = join(args.save_dir, str(epoch))
     tf.saved_model.save(model, save_path)
-    logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss.result(), test_loss.result()))
+    logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
