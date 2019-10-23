@@ -26,7 +26,7 @@ optimizer = tf.keras.optimizers.Adam()
 train_loss = tf.keras.metrics.Mean(name='train_loss')
 test_loss = tf.keras.metrics.Mean(name='test_loss')
 
-
+@tf.function
 def train_step(ds_image, image):
     with tf.GradientTape() as tape:
         generated_image = model(ds_image)
@@ -36,7 +36,7 @@ def train_step(ds_image, image):
 
     train_loss(loss)
 
-
+@tf.function
 def test_step(ds_image, image):
     generated_image = model(ds_image)
     t_loss = loss_object(generated_image, image)
