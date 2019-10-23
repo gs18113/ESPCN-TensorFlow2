@@ -86,7 +86,7 @@ if args.use_tpu:
         per_example_losses = tpu_strategy.experimental_run_v2(
             step_fn, args=(dist_inputs, ))
         mean_loss = tpu_strategy.reduce(
-            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
+            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=None)
         return mean_loss
     train_step = train_step_tpu
             
@@ -113,7 +113,7 @@ if args.use_tpu:
         per_example_losses = tpu_strategy.experimental_run_v2(
             step_fn, args=(dist_inputs, ))
         mean_loss = tpu_strategy.reduce(
-            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=0)
+            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=None)
         return mean_loss
     test_step = test_step_tpu
 else:
