@@ -21,8 +21,8 @@ class ESPCN(keras.Model):
         # for TFLite compatibility
         x = tf.reshape(x, [-1, 128, 128, self.upscale_factor, self.upscale_factor, 3])
         x = tf.split(x, 128, axis=1)
-        x = tf.concat([tf.squeeze(i) for i in x], axis=2)
+        x = tf.concat([tf.squeeze(i, axis=1) for i in x], axis=2)
         x = tf.split(x, 128, axis=1)
-        x = tf.concat([tf.squeeze(i) for i in x], axis=2)
+        x = tf.concat([tf.squeeze(i, axis=1) for i in x], axis=2)
 
         return x
