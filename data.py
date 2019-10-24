@@ -39,11 +39,10 @@ def get_image_from_file(filename, crop_size=256):
     offset_width = (image_width-crop_size) // 2
     original_image = tf.image.crop_to_bounding_box(image, offset_height, offset_width, crop_size, crop_size)
     downsampled_image = tf.image.resize(original_image, [crop_size // 2, crop_size // 2])
-    # convert to 0~1 and change HWC to CHW 
-    # (because the network accepts single channel. 
-    # See model.py line 13 for better understanding.)
-    original_image = tf.transpose(original_image / 255.0, [2, 0, 1])
-    downsampled_image = tf.transpose(downsampled_image / 255.0, [2, 0, 1])
+    # original_image = tf.transpose(original_image / 255.0, [2, 0, 1])
+    # downsampled_image = tf.transpose(downsampled_image / 255.0, [2, 0, 1])
+    original_image = original_image / 255.0
+    downsampled_image = downsampled_image / 255.0
     return downsampled_image, original_image
 
 def get_training_set(upscale_factor):
