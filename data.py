@@ -60,3 +60,5 @@ def get_test_set(upscale_factor):
     images = names.map(get_image_from_file)
     return images
     
+def get_coco_training_set(upscale_factor):
+    

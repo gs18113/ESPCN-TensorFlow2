@@ -61,7 +61,9 @@ test_dataset = None
 if args.use_tpu:
     with tpu_strategy.scope():
         train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
+        train_dataset = tpu_strategy.experimental_distribute_dataset(train_dataset)
         test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
+        test_dataset = tpu_strategy.experimental_distribute_dataset(test_dataset)
 else:
     train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
     test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
@@ -71,24 +73,25 @@ train_step = None
 test_step = None
 
 if args.use_tpu:
-    @tf.function
-    def train_step_tpu(dist_inputs):
-        def step_fn(inputs):
-            ds_image, image = inputs
-            with tf.GradientTape() as tape:
-                generated_image = model(ds_image)
-                loss_one = tf.reduce_sum(tf.reduce_mean(tf.math.squared_difference(tf.reshape(generated_image, [-1, 256*256]), tf.reshape(image, [-1, 256*256])), 1))
-                loss = loss_one * (1.0 / args.batch_size)
-            gradients = tape.gradient(loss, model.trainable_variables)
-            optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-            return loss_one
+    with tpu_strategy.scope():
+        @tf.function
+        def train_step_tpu(dist_inputs):
+            def step_fn(inputs):
+                ds_image, image = inputs
+                with tf.GradientTape() as tape:
+                    generated_image = model(ds_image)
+                    loss_one = tf.reduce_sum(tf.reduce_mean(tf.math.squared_difference(tf.reshape(generated_image, [-1, 256*256]), tf.reshape(image, [-1, 256*256])), 1))
+                    loss = loss_one * (1.0 / args.batch_size)
+                gradients = tape.gradient(loss, model.trainable_variables)
+                optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+                return loss_one
 
-        per_example_losses = tpu_strategy.experimental_run_v2(
-            step_fn, args=(dist_inputs, ))
-        mean_loss = tpu_strategy.reduce(
-            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=None)
-        return mean_loss
-    train_step = train_step_tpu
+            per_example_losses = tpu_strategy.experimental_run_v2(
+                step_fn, args=(dist_inputs, ))
+            mean_loss = tpu_strategy.reduce(
+                tf.distribute.ReduceOp.MEAN, per_example_losses, axis=None)
+            return mean_loss
+        train_step = train_step_tpu
             
 else:
     @tf.function
@@ -102,20 +105,21 @@ else:
     train_step = train_step_normal
 
 if args.use_tpu:
-    @tf.function
-    def test_step_tpu(dist_inputs):
-        def step_fn(inputs):
-            ds_image, image = inputs
-            generated_image = model(ds_image)
-            loss_one = tf.reduce_sum(tf.reduce_mean(tf.math.squared_difference(tf.reshape(generated_image, [-1, 256*256]), tf.reshape(image, [-1, 256*256])), 1))
-            return loss_one
+    with tpu_strategy.scope():
+        @tf.function
+        def test_step_tpu(dist_inputs):
+            def step_fn(inputs):
+                ds_image, image = inputs
+                generated_image = model(ds_image)
+                loss_one = tf.reduce_sum(tf.reduce_mean(tf.math.squared_difference(tf.reshape(generated_image, [-1, 256*256]), tf.reshape(image, [-1, 256*256])), 1))
+                return loss_one
 
-        per_example_losses = tpu_strategy.experimental_run_v2(
-            step_fn, args=(dist_inputs, ))
-        mean_loss = tpu_strategy.reduce(
-            tf.distribute.ReduceOp.MEAN, per_example_losses, axis=None)
-        return mean_loss
-    test_step = test_step_tpu
+            per_example_losses = tpu_strategy.experimental_run_v2(
+                step_fn, args=(dist_inputs, ))
+            mean_loss = tpu_strategy.reduce(
+                tf.distribute.ReduceOp.MEAN, per_example_losses, axis=None)
+            return mean_loss
+        test_step = test_step_tpu
 else:
     @tf.function
     def test_step_normal(ds_image, image):
