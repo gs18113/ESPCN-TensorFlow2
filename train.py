@@ -98,7 +98,7 @@ else:
     def train_step_normal(ds_image, image):
         with tf.GradientTape() as tape:
             generated_image = model(ds_image)
-            loss = tf.reduce_mean(tf.math.squared_difference(tf.reshape(generated_image, [-1, 256*256*3]), tf.reshape(image, [-1, 256*256*3])), axis=1)
+            loss = tf.reduce_mean(tf.math.squared_difference(generated_image, image))
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         return loss
@@ -124,7 +124,7 @@ else:
     @tf.function
     def test_step_normal(ds_image, image):
         generated_image = model(ds_image)
-        loss = tf.reduce_mean(tf.math.squared_difference(tf.reshape(generated_image, [-1, 256*256*3]), tf.reshape(image, [-1, 256*256*3])), axis=1)
+        loss = tf.reduce_mean(tf.math.squared_difference(generated_image, image))
         return loss
     test_step = test_step_normal
 
