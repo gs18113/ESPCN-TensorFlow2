@@ -124,6 +124,8 @@ else:
         return loss
     test_step = test_step_normal
 
+best_model = 0
+best_test_loss = 1000000
 for epoch in range(args.num_epochs):
     train_loss_sum = 0
     train_cnt = 0
@@ -148,6 +150,10 @@ for epoch in range(args.num_epochs):
         for test_ds_image, test_image in test_dataset:
             test_loss_sum += test_step(test_ds_image, test_image)
             test_cnt += 1
+
+    if best_test_loss > (test_loss_sum / test_cnt):
+        best_model = epoch
+        best_test_loss = (test_loss_sum / test_cnt)
 
     save_path = join(args.save_dir, str(epoch))
     tf.saved_model.save(model, save_path)
