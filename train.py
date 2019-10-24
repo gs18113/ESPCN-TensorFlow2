@@ -162,3 +162,5 @@ for epoch in range(args.num_epochs):
     save_path = join(args.save_dir, str(epoch))
     tf.saved_model.save(model, save_path)
     logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
+
+print('best model: %d' % best_model)
