@@ -79,7 +79,7 @@ def get_coco_training_set(upscale_factor):
     coco = tfds.load(name='coco/2017', split=split)
     return coco.map(get_image_from_coco)
 
-def get_coco_training_set(upscale_factor):
+def get_coco_test_set(upscale_factor):
     split = tfds.Split.TEST
     coco = tfds.load(name='coco/2017', split=split)
     return coco.map(get_image_from_coco)
