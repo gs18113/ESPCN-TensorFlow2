@@ -1,7 +1,7 @@
 import argparse
 import tensorflow as tf
 from model import ESPCN
-from data import get_training_set, get_test_set
+from data import get_training_set, get_test_set, get_coco_training_set, get_coco_test_set
 import logging
 from os.path import join
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [INFO] %(message)s')
@@ -60,13 +60,17 @@ train_dataset = None
 test_dataset = None
 if args.use_tpu:
     with tpu_strategy.scope():
-        train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
+        #train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
+        train_dataset = get_coco_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
         train_dataset = tpu_strategy.experimental_distribute_dataset(train_dataset)
-        test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
+        #test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
+        test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size)
         test_dataset = tpu_strategy.experimental_distribute_dataset(test_dataset)
 else:
-    train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
-    test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
+    train_dataset = get_coco_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
+    #train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
+    test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size)
+    #test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
 
 # Train & test steps
 train_step = None
