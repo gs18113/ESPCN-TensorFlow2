@@ -25,7 +25,7 @@ parser.add_argument('-seed', default=123, type=int)
 parser.add_argument('-lr', default=0.01, type=float)
 parser.add_argument('-save_dir', default='saved_models', type=str)
 parser.add_argument('-exp_name', type=str, required=True)
-parser.add_argument('-use_tpu', type=str2bool, nargs='?', default=False)
+parser.add_argument('-use_tpu', type=str2bool, default=False)
 args = parser.parse_args()
 tf.random.set_seed(args.seed)
 
