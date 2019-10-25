@@ -3,7 +3,8 @@ import tensorflow as tf
 from model import ESPCN
 from data import get_training_set, get_test_set, get_coco_training_set, get_coco_test_set
 import logging
-from os.path import join
+import os
+from os.path import join, exists
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [INFO] %(message)s')
 
 def str2bool(v):
@@ -23,6 +24,7 @@ parser.add_argument('-batch_size', default=32, type=int)
 parser.add_argument('-seed', default=123, type=int)
 parser.add_argument('-lr', default=0.01, type=float)
 parser.add_argument('-save_dir', default='saved_models', type=str)
+parser.add_argument('-exp_name', type=str, required=True)
 parser.add_argument('-use_tpu', type=str2bool, nargs='?', default=False)
 args = parser.parse_args()
 tf.random.set_seed(args.seed)
@@ -132,6 +134,7 @@ else:
         return loss
     test_step = test_step_normal
 
+logging.info('Starting train process. Exp_name: %s' % args.exp_name)
 best_model = 0
 best_test_loss = 1000000
 for epoch in range(args.num_epochs):
@@ -163,7 +166,9 @@ for epoch in range(args.num_epochs):
         best_model = epoch
         best_test_loss = (test_loss_sum / test_cnt)
 
-    save_path = join(args.save_dir, str(epoch))
+    save_path = join(join(args.save_dir, args.exp_name), str(epoch))
+    if not exists(save_path):
+        os.makedirs(save_path)
     tf.saved_model.save(model, save_path)
     logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
 
