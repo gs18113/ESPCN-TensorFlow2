@@ -63,14 +63,21 @@ def get_test_set(upscale_factor):
 def get_image_from_coco(coco, crop_size=256):
     image = coco['image']
     image = tf.cast(image, tf.float32)
+
     image_height = tf.shape(image)[0]
     image_width = tf.shape(image)[1]
-    offset_height = (image_height-crop_size) // 2
-    offset_width = (image_width-crop_size) // 2
+    pad_height = tf.maximum(crop_size-image_height, 0)
+    pad_width = tf.maximum(crop_size-image_height, 0)
+    image = tf.pad(image, tf.constant([[0, pad_height], [0, pad_width], [0, 0]]))
+
+    offset_height = tf.math.floordiv(image_height-crop_size, 2)
+    offset_width = tf.math.floordiv(image_width-crop_size, 2)
+    downsampled_size = tf.math.floordiv(crop_size, 2)
+
     original_image = tf.image.crop_to_bounding_box(image, offset_height, offset_width, crop_size, crop_size)
-    downsampled_image = tf.image.resize(original_image, [crop_size // 2, crop_size // 2])
-    original_image = original_image / 255.0
-    downsampled_image = downsampled_image / 255.0
+    downsampled_image = tf.image.resize(original_image, [downsampled_size, downsampled_size])
+    original_image = tf.divide(original_image, 255.0)
+    downsampled_image = tf.divide(downsampled_image, 255.0)
     return downsampled_image, original_image
 
     
