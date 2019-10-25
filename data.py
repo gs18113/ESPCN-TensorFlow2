@@ -67,7 +67,7 @@ def get_image_from_coco(coco, crop_size=256):
     image_height = tf.shape(image)[0]
     image_width = tf.shape(image)[1]
     pad_height = tf.maximum(crop_size-image_height, 0)
-    pad_width = tf.maximum(crop_size-image_height, 0)
+    pad_width = tf.maximum(crop_size-image_width, 0)
     image = tf.pad(image, tf.stack([[0, pad_height], [0, pad_width], [0, 0]], axis=0))
     image_height = tf.shape(image)[0]
     image_width = tf.shape(image)[1]
