@@ -38,18 +38,9 @@ lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
 # TPU objects
 tpu_strategy = None
 
+# model & optimizer
 model = None
-
-# Loss & optimizer
 optimizer = None
-
-# Dataset
-train_dataset = None
-test_dataset = None
-
-# Train & test steps
-train_step = None
-test_step = None
 
 if args.use_tpu:
     cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver()
@@ -58,9 +49,10 @@ if args.use_tpu:
     tpu_strategy = tf.distribute.experimental.TPUStrategy(cluster_resolver)
     with tpu_strategy.scope():
         model = ESPCN(args.upscale_factor)
-
-        # optimizer
         optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
+else:
+    model = ESPCN(args.upscale_factor)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
 
 # Dataset
 train_dataset = None
@@ -79,18 +71,9 @@ else:
     test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size)
     #test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
 
-        # functions
-        @tf.function
-        def train_step_tpu(dist_inputs):
-            def step_fn(inputs):
-                ds_image, image = inputs
-                with tf.GradientTape() as tape:
-                    generated_image = model(ds_image)
-                    loss_one = tf.reduce_sum(tf.reduce_mean(tf.math.squared_difference(tf.reshape(generated_image, [-1, 256*256]), tf.reshape(image, [-1, 256*256])), 1))
-                    loss = loss_one * (1.0 / args.batch_size)
-                gradients = tape.gradient(loss, model.trainable_variables)
-                optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-                return loss_one
+# Train & test steps
+train_step = None
+test_step = None
 
 if args.use_tpu:
     with tpu_strategy.scope():
@@ -114,16 +97,6 @@ if args.use_tpu:
         train_step = train_step_tpu
             
 else:
-    model = ESPCN(args.upscale_factor)
-
-    # optimizer
-    optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
-
-    # dataset
-    train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
-    test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
-
-    # function
     @tf.function
     def train_step_normal(ds_image, image):
         with tf.GradientTape() as tape:
@@ -164,23 +137,23 @@ best_test_loss = 1000000
 for epoch in range(args.num_epochs):
     train_loss_sum = 0
     train_cnt = 0
+    test_loss_sum = 0
+    test_cnt = 0
     if args.use_tpu:
         with tpu_strategy.scope():
             for inputs in train_dataset:
                 train_loss_sum += train_step(inputs)
                 train_cnt += 1
+            for inputs in test_dataset:
+                test_loss_sum += test_step(inputs)
+                test_cnt += 1
     else:
-        for ds_image, image in train_dataset:
-            train_loss_sum += train_step(ds_image, image)
+        for inputs in train_dataset:
+            train_loss_sum += train_step(inputs)
             train_cnt += 1
-        test_loss_sum = 0
-        test_cnt = 0
         for inputs in test_dataset:
             test_loss_sum += test_step(inputs)
             test_cnt += 1
-        save_path = join(args.save_dir, str(epoch))
-        tf.saved_model.save(model, save_path)
-        logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
 
     if best_test_loss > (test_loss_sum / test_cnt):
         best_model = epoch
