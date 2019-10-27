@@ -62,11 +62,6 @@ if args.use_tpu:
         # optimizer
         optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule)
 
-<<<<<<< HEAD
-        # dataset
-        train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
-        test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
-=======
 # Dataset
 train_dataset = None
 test_dataset = None
@@ -83,7 +78,6 @@ else:
     #train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
     test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size)
     #test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
->>>>>>> no_separate
 
         # functions
         @tf.function
@@ -98,21 +92,6 @@ else:
                 optimizer.apply_gradients(zip(gradients, model.trainable_variables))
                 return loss_one
 
-<<<<<<< HEAD
-            per_example_losses = tpu_strategy.experimental_run_v2(
-                step_fn, args=(dist_inputs, ))
-            mean_loss = tpu_strategy.reduce(
-                tf.distribute.ReduceOp.MEAN, per_example_losses, axis=None)
-            return mean_loss
-        train_step = train_step_tpu
-
-        @tf.function
-        def test_step_tpu(dist_inputs):
-            def step_fn(inputs):
-                ds_image, image = inputs
-                generated_image = model(ds_image)
-                loss_one = tf.reduce_sum(tf.reduce_mean(tf.math.squared_difference(tf.reshape(generated_image, [-1, 256*256]), tf.reshape(image, [-1, 256*256])), 1))
-=======
 if args.use_tpu:
     with tpu_strategy.scope():
         @tf.function
@@ -125,7 +104,6 @@ if args.use_tpu:
                     loss = loss_one * (1.0 / args.batch_size)
                 gradients = tape.gradient(loss, model.trainable_variables)
                 optimizer.apply_gradients(zip(gradients, model.trainable_variables))
->>>>>>> no_separate
                 return loss_one
 
             per_example_losses = tpu_strategy.experimental_run_v2(
@@ -133,28 +111,8 @@ if args.use_tpu:
             mean_loss = tpu_strategy.reduce(
                 tf.distribute.ReduceOp.MEAN, per_example_losses, axis=None)
             return mean_loss
-<<<<<<< HEAD
-        test_step = test_step_tpu
-
-        for epoch in range(args.num_epochs):
-            train_loss_sum = 0
-            train_cnt = 0
-            for inputs in train_dataset:
-                train_loss_sum += train_step(inputs)
-                train_cnt += 1
-            test_loss_sum = 0
-            test_cnt = 0
-            for inputs in test_dataset:
-                test_loss_sum += test_step(inputs)
-                test_cnt += 1
-            save_path = join(args.save_dir, str(epoch))
-            tf.saved_model.save(model, save_path)
-            logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
-
-=======
         train_step = train_step_tpu
             
->>>>>>> no_separate
 else:
     model = ESPCN(args.upscale_factor)
 
@@ -176,8 +134,6 @@ else:
         return loss
     train_step = train_step_normal
 
-<<<<<<< HEAD
-=======
 if args.use_tpu:
     with tpu_strategy.scope():
         @tf.function
@@ -195,7 +151,6 @@ if args.use_tpu:
             return mean_loss
         test_step = test_step_tpu
 else:
->>>>>>> no_separate
     @tf.function
     def test_step_normal(ds_image, image):
         generated_image = model(ds_image)
@@ -203,13 +158,6 @@ else:
         return loss
     test_step = test_step_normal
 
-<<<<<<< HEAD
-    for epoch in range(args.num_epochs):
-        train_loss_sum = 0
-        train_cnt = 0
-        for inputs in train_dataset:
-            train_loss_sum += train_step(inputs)
-=======
 logging.info('Starting train process. Exp_name: %s' % args.exp_name)
 best_model = 0
 best_test_loss = 1000000
@@ -224,7 +172,6 @@ for epoch in range(args.num_epochs):
     else:
         for ds_image, image in train_dataset:
             train_loss_sum += train_step(ds_image, image)
->>>>>>> no_separate
             train_cnt += 1
         test_loss_sum = 0
         test_cnt = 0
@@ -235,8 +182,6 @@ for epoch in range(args.num_epochs):
         tf.saved_model.save(model, save_path)
         logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
 
-<<<<<<< HEAD
-=======
     if best_test_loss > (test_loss_sum / test_cnt):
         best_model = epoch
         best_test_loss = (test_loss_sum / test_cnt)
@@ -248,4 +193,3 @@ for epoch in range(args.num_epochs):
     logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
 
 print('best model: %d' % best_model)
->>>>>>> no_separate
