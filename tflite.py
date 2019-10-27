@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-model_epoch', type=int, required=True)
 parser.add_argument('-exp_name', type=str, required=True)
 parser.add_argument('-saved_dir', default='saved_models', type=str)
-parser.add_argument('-tflite_dir', default='tflite_model', type=str)
+parser.add_argument('-tflite_dir', default='tflite_models', type=str)
 args = parser.parse_args()
 
 saved_path = join(join(args.saved_dir, args.exp_name), str(args.model_epoch))
