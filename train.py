@@ -98,7 +98,8 @@ if args.use_tpu:
             
 else:
     @tf.function
-    def train_step_normal(ds_image, image):
+    def train_step_normal(inputs):
+        ds_image, image = inputs
         with tf.GradientTape() as tape:
             generated_image = model(ds_image)
             loss = tf.reduce_mean(tf.math.squared_difference(generated_image, image))
@@ -125,7 +126,8 @@ if args.use_tpu:
         test_step = test_step_tpu
 else:
     @tf.function
-    def test_step_normal(ds_image, image):
+    def test_step_normal(inputs):
+        ds_image, image = inputs
         generated_image = model(ds_image)
         loss = tf.reduce_mean(tf.math.squared_difference(generated_image, image))
         return loss
