@@ -14,8 +14,8 @@ parser.add_argument('-tflite_dir', default='tflite_model', type=str)
 args = parser.parse_args()
 
 saved_path = join(join(args.saved_dir, args.exp_name), str(args.model_epoch))
-assert exists(saved_path)
 logging.info('Creating converter from saved path %s...' % saved_path)
+assert exists(saved_path)
 converter = tf.lite.TFLiteConverter.from_saved_model(saved_path)
 tflite_model = converter.convert()
 if not exists(args.tflite_dir):
