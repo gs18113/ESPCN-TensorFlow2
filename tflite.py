@@ -21,5 +21,5 @@ tflite_model = converter.convert()
 if not exists(args.tflite_dir):
     os.makedirs(args.tflite_dir)
 
-open(join(args.tflite_dir, 'converted_model_'+args.exp_name+'_epoch_'+str(args.model_epoch)+'.tflite')).write(tflite_model)
+open(join(args.tflite_dir, 'converted_model_'+args.exp_name+'_epoch_'+str(args.model_epoch)+'.tflite'), 'wb').write(tflite_model)
 logging.info('Converting successful!')
