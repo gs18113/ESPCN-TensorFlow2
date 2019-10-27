@@ -10,7 +10,8 @@ class ESPCN(keras.Model):
         self.conv4 = keras.layers.Conv2D((upscale_factor ** 2)*3, 3, padding='same', activation='tanh', kernel_initializer='orthogonal')
         self.upscale_factor = upscale_factor
     def call(self, x):
-        x = tf.reshape(x, [-1, 128, 128, 3])
+        image_height = tf.shape(x)[0]
+        image_width = tf.shape(x)[1]
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
@@ -19,10 +20,10 @@ class ESPCN(keras.Model):
         # x = tf.nn.depth_to_space(x, self.upscale_factor)
 
         # for TFLite compatibility
-        x = tf.reshape(x, [-1, 128, 128, self.upscale_factor, self.upscale_factor, 3])
-        x = tf.split(x, 128, axis=1)
+        x = tf.reshape(x, [-1, image_height, image_height, self.upscale_factor, self.upscale_factor, 3])
+        x = tf.split(x, image_height, axis=1)
         x = tf.concat([tf.squeeze(i, axis=1) for i in x], axis=2)
-        x = tf.split(x, 128, axis=1)
+        x = tf.split(x, image_width, axis=1)
         x = tf.concat([tf.squeeze(i, axis=1) for i in x], axis=2)
 
         return x
