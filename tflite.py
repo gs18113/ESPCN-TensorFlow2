@@ -1,4 +1,4 @@
-import tensorflow as tf
+from tensorflow import lite
 import argparse
 import logging
 import os 
@@ -16,7 +16,7 @@ args = parser.parse_args()
 saved_path = join(join(args.saved_dir, args.exp_name), str(args.model_epoch))
 logging.info('Creating converter from saved path %s...' % saved_path)
 assert exists(saved_path)
-converter = tf.lite.TFLiteConverter.from_saved_model(saved_path)
+converter = lite.TFLiteConverter.from_saved_model(saved_path)
 tflite_model = converter.convert()
 if not exists(args.tflite_dir):
     os.makedirs(args.tflite_dir)
