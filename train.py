@@ -167,8 +167,10 @@ for epoch in range(args.num_epochs):
     if not exists(save_path):
         os.makedirs(save_path)
     tf.saved_model.save(model, save_path)
-    logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
+    logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
     if args.save_tflite:
+        if not exists(join(args.tflite_dir, args.exp_name)):
+            os.makedirs(join(args.tflite_dir, args.exp_name))
         tflite_file = join(args.tflite_dir, args.exp_name, str(epoch)+'_256.tflite')
         converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), )).get_concrete_function()])
         tflite_model = converter.convert()
@@ -177,6 +179,7 @@ for epoch in range(args.num_epochs):
         converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), )).get_concrete_function()])
         tflite_model = converter.convert()
         open(tflite_file, 'wb').write(tflite_model)
+        print('TFLite models written to %s', join(args.tflite_dir, args.exp_name))
         
 
 print('best model: %d' % best_model)
