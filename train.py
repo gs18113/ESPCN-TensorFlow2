@@ -179,7 +179,7 @@ for epoch in range(args.num_epochs):
         converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), )).get_concrete_function()])
         tflite_model = converter.convert()
         open(tflite_file, 'wb').write(tflite_model)
-        print('TFLite models written to %s', join(args.tflite_dir, args.exp_name))
+        print('TFLite models written to %s' % join(args.tflite_dir, args.exp_name))
         
 
 print('best model: %d' % best_model)
