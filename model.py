@@ -10,8 +10,8 @@ class ESPCN(keras.Model):
         self.conv4 = keras.layers.Conv2D((upscale_factor ** 2)*3, 3, padding='same', activation='tanh', kernel_initializer='orthogonal')
         self.upscale_factor = upscale_factor
     def call(self, x):
-        image_height = tf.shape(x)[1]
-        image_width = tf.shape(x)[2]
+        image_height = x.shape[1]
+        image_width = x.shape[2]
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
