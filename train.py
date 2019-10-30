@@ -26,6 +26,8 @@ parser.add_argument('-lr', default=0.001, type=float)
 parser.add_argument('-save_dir', default='saved_models', type=str)
 parser.add_argument('-exp_name', type=str, required=True)
 parser.add_argument('-use_tpu', type=str2bool, default=False)
+parser.add_argument('-save_tfilte', type=str2bool, default=False)
+parser.add_argument('-tflite_dir', type=str, default='tflite_models')
 args = parser.parse_args()
 tf.random.set_seed(args.seed)
 
@@ -161,10 +163,20 @@ for epoch in range(args.num_epochs):
         best_model = epoch
         best_test_loss = (test_loss_sum / test_cnt)
 
-    save_path = join(join(args.save_dir, args.exp_name), str(epoch))
+    save_path = join(args.save_dir, args.exp_name, str(epoch))
     if not exists(save_path):
         os.makedirs(save_path)
     tf.saved_model.save(model, save_path)
     logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
+    if args.save_tflite:
+        tflite_file = join(args.tflite_dir, args.exp_name, str(epoch)+'_256.tflite')
+        converter = tf.lite.TFLiteConverter.from_concrete_function([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), ))])
+        tflite_model = converter.convert()
+        open(tflite_file, 'wb').write(tflite_model)
+        tflite_file = join(args.tflite_dir, args.exp_name, str(epoch)+'_512.tflite')
+        converter = tf.lite.TFLiteConverter.from_concrete_function([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), ))])
+        tflite_model = converter.convert()
+        open(tflite_file, 'wb').write(tflite_model)
+        
 
 print('best model: %d' % best_model)
