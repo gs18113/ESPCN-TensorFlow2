@@ -170,11 +170,11 @@ for epoch in range(args.num_epochs):
     logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch+1, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
     if args.save_tflite:
         tflite_file = join(args.tflite_dir, args.exp_name, str(epoch)+'_256.tflite')
-        converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), ))])
+        converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), )).get_concrete_function()])
         tflite_model = converter.convert()
         open(tflite_file, 'wb').write(tflite_model)
         tflite_file = join(args.tflite_dir, args.exp_name, str(epoch)+'_512.tflite')
-        converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), ))])
+        converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), )).get_concrete_function()])
         tflite_model = converter.convert()
         open(tflite_file, 'wb').write(tflite_model)
         
