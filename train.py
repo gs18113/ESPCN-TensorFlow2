@@ -174,7 +174,7 @@ for epoch in range(args.num_epochs):
         tflite_model = converter.convert()
         open(tflite_file, 'wb').write(tflite_model)
         tflite_file = join(args.tflite_dir, args.exp_name, str(epoch)+'_512.tflite')
-        converter = tf.lite.TFLiteConverter.from_concrete_function([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), ))])
+        converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), ))])
         tflite_model = converter.convert()
         open(tflite_file, 'wb').write(tflite_model)
         
