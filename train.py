@@ -147,7 +147,7 @@ else:
     test_step = test_step_normal
 
 tflite_path = join(args.output_dir, args.exp_name, 'tflite')
-if args.save_tfilte:
+if args.save_tflite:
     os.makedirs(tflite_path)
 
 logging.info('Starting train process. Exp_name: %s' % args.exp_name)
