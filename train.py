@@ -149,7 +149,8 @@ else:
 
 tflite_path = join(args.output_dir, args.exp_name, 'tflite')
 if args.save_tflite:
-    os.makedirs(tflite_path)
+    if not exists(tflite_path):
+        os.makedirs(tflite_path)
 
 logging.info('Starting train process. Exp_name: %s' % args.exp_name)
 best_model = 0
