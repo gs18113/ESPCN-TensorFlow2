@@ -23,11 +23,11 @@ parser.add_argument('-num_epochs', default=100, type=int)
 parser.add_argument('-batch_size', default=32, type=int)
 parser.add_argument('-seed', default=123, type=int)
 parser.add_argument('-lr', default=0.001, type=float)
-parser.add_argument('-save_dir', default='saved_models', type=str)
+parser.add_argument('-output_dir', default='outputs', type=str)
 parser.add_argument('-exp_name', type=str, required=True)
 parser.add_argument('-use_tpu', type=str2bool, default=False)
 parser.add_argument('-save_tflite', type=str2bool, default=False)
-parser.add_argument('-tflite_dir', type=str, default='tflite_models')
+#parser.add_argument('-tflite_dir', type=str, default='tflite_models')
 args = parser.parse_args()
 tf.random.set_seed(args.seed)
 
@@ -73,6 +73,13 @@ else:
     test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     #test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
 
+ckpt = tf.train.Checkpoint(step=tf.Variable(1), optimizer=optimizer, net=model)
+
+ckpt_dir = join(args.output_dir, args.exp_name, 'ckpts/')
+if not exists(ckpt_dir):
+    os.makedirs(ckpt_dir)
+manager = tf.train.CheckpointManager(ckpt, ckpt_dir, max_to_keep=100)
+
 # Train & test steps
 train_step = None
 test_step = None
@@ -95,7 +102,9 @@ if args.use_tpu:
                 step_fn, args=(dist_inputs, ))
             mean_loss = tpu_strategy.reduce(
                 tf.distribute.ReduceOp.MEAN, per_example_losses, axis=None)
+            ckpt.step.assign_add(1)
             return mean_loss
+
         train_step = train_step_tpu
             
 else:
@@ -107,7 +116,9 @@ else:
             loss = tf.reduce_mean(tf.math.squared_difference(generated_image, image))
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        ckpt.step.assign_add(1)
         return loss
+
     train_step = train_step_normal
 
 if args.use_tpu:
@@ -134,6 +145,10 @@ else:
         loss = tf.reduce_mean(tf.math.squared_difference(generated_image, image))
         return loss
     test_step = test_step_normal
+
+tflite_path = join(args.output_dir, args.exp_name, 'tflite')
+if args.save_tfilte:
+    os.makedirs(tflite_path)
 
 logging.info('Starting train process. Exp_name: %s' % args.exp_name)
 best_model = 0
@@ -163,23 +178,28 @@ for epoch in range(args.num_epochs):
         best_model = epoch
         best_test_loss = (test_loss_sum / test_cnt)
 
-    save_path = join(args.save_dir, args.exp_name, str(epoch))
-    if not exists(save_path):
-        os.makedirs(save_path)
-    tf.saved_model.save(model, save_path)
+    # save_path = join(args.save_dir, args.exp_name, str(epoch))
+    # if not exists(save_path):
+    #     os.makedirs(save_path)
+    # tf.saved_model.save(model, save_path)
     logging.info('epoch: %d, train_loss: %f, test_loss: %f' % (epoch, train_loss_sum / train_cnt, test_loss_sum / test_cnt))
+    ckpt_path = manager.save()
+    logging.info('Saved model checkpoint to %s' % ckpt_path)
+    
     if args.save_tflite:
-        if not exists(join(args.tflite_dir, args.exp_name)):
-            os.makedirs(join(args.tflite_dir, args.exp_name))
-        tflite_file = join(args.tflite_dir, args.exp_name, str(epoch)+'_256.tflite')
+        tflite_file = join(tflite_path, args.exp_name+str(epoch)+'_size_256.tflite')
         converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), )).get_concrete_function()])
         tflite_model = converter.convert()
         open(tflite_file, 'wb').write(tflite_model)
-        tflite_file = join(args.tflite_dir, args.exp_name, str(epoch)+'_512.tflite')
-        converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 256, 256, 3)), )).get_concrete_function()])
+        tflite_file = join(args.tflite_dir, args.exp_name, args.exp_name+str(epoch)+'_size_512.tflite')
+        converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 512, 512, 3)), )).get_concrete_function()])
         tflite_model = converter.convert()
         open(tflite_file, 'wb').write(tflite_model)
-        logging.info('TFLite models written to %s' % join(args.tflite_dir, args.exp_name))
+        tflite_file = join(args.tflite_dir, args.exp_name, args.exp_name+str(epoch)+'_size_1024.tflite')
+        converter = tf.lite.TFLiteConverter.from_concrete_functions([tf.function(model.call, input_signature=(tf.TensorSpec(shape=(None, 1024, 1024, 3)), )).get_concrete_function()])
+        tflite_model = converter.convert()
+        open(tflite_file, 'wb').write(tflite_model)
+        logging.info('TFLite models written to %s' % tflite_path)
         
 
 print('best model: %d' % best_model)
