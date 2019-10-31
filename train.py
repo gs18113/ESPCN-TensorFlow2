@@ -5,7 +5,6 @@ from data import get_training_set, get_test_set, get_coco_training_set, get_coco
 import logging
 import os
 from os.path import join, exists
-from tqdm import tqdm
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [INFO] %(message)s')
 
 def str2bool(v):
@@ -170,11 +169,11 @@ for epoch in range(args.num_epochs):
                 test_cnt += 1
     else:
         logging.info('training...')
-        for inputs in tqdm(train_dataset):
+        for inputs in train_dataset:
             train_loss_sum += train_step(inputs)
             train_cnt += 1
         logging.info('testing...')
-        for inputs in tqdm(test_dataset):
+        for inputs in test_dataset:
             test_loss_sum += test_step(inputs)
             test_cnt += 1
 
