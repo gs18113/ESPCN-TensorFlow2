@@ -33,7 +33,7 @@ tf.random.set_seed(args.seed)
 
 lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
     args.lr,
-    decay_steps=200,
+    decay_steps=400,
     decay_rate=0.99,
     staircase=True)
 
