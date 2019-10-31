@@ -68,9 +68,11 @@ if args.use_tpu:
         test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
         test_dataset = tpu_strategy.experimental_distribute_dataset(test_dataset)
 else:
-    train_dataset = get_coco_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    #train_dataset = get_coco_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    train_dataset = get_coco_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)#.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     #train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
-    test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    #test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size)#.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     #test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
 
 ckpt = tf.train.Checkpoint(step=tf.Variable(1), optimizer=optimizer, net=model)
