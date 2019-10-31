@@ -86,11 +86,9 @@ def get_image_from_coco(coco, crop_size=256):
 def get_coco_training_set(upscale_factor):
     split = tfds.Split.TRAIN
     coco = tfds.load(name='coco/2017', split=split)
-    #return coco.map(get_image_from_coco, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    return coco.map(get_image_from_coco)
+    return coco.map(get_image_from_coco, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
 def get_coco_test_set(upscale_factor):
     split = tfds.Split.TEST
     coco = tfds.load(name='coco/2017', split=split)
-    #return coco.map(get_image_from_coco, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    return coco.map(get_image_from_coco)
+    return coco.map(get_image_from_coco, num_parallel_calls=tf.data.experimental.AUTOTUNE)
