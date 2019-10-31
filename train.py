@@ -102,7 +102,6 @@ if args.use_tpu:
                 step_fn, args=(dist_inputs, ))
             mean_loss = tpu_strategy.reduce(
                 tf.distribute.ReduceOp.MEAN, per_example_losses, axis=None)
-            ckpt.step.assign_add(1)
             return mean_loss
 
         train_step = train_step_tpu
@@ -116,7 +115,6 @@ else:
             loss = tf.reduce_mean(tf.math.squared_difference(generated_image, image))
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-        ckpt.step.assign_add(1)
         return loss
 
     train_step = train_step_normal
@@ -164,6 +162,7 @@ for epoch in range(args.num_epochs):
             for inputs in train_dataset:
                 train_loss_sum += train_step(inputs)
                 train_cnt += 1
+                ckpt.step.assign_add(1)
             for inputs in test_dataset:
                 test_loss_sum += test_step(inputs)
                 test_cnt += 1
@@ -172,6 +171,7 @@ for epoch in range(args.num_epochs):
         for inputs in train_dataset:
             train_loss_sum += train_step(inputs)
             train_cnt += 1
+            ckpt.step.assign_add(1)
         logging.info('testing...')
         for inputs in test_dataset:
             test_loss_sum += test_step(inputs)
