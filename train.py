@@ -62,15 +62,15 @@ test_dataset = None
 if args.use_tpu:
     with tpu_strategy.scope():
         #train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
-        train_dataset = get_coco_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
+        train_dataset = get_coco_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
         train_dataset = tpu_strategy.experimental_distribute_dataset(train_dataset)
         #test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
-        test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size)
+        test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
         test_dataset = tpu_strategy.experimental_distribute_dataset(test_dataset)
 else:
-    train_dataset = get_coco_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
+    train_dataset = get_coco_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     #train_dataset = get_training_set(args.upscale_factor).shuffle(200).batch(args.batch_size)
-    test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size)
+    test_dataset = get_coco_test_set(args.upscale_factor).batch(args.batch_size).prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     #test_dataset = get_test_set(args.upscale_factor).batch(args.batch_size)
 
 # Train & test steps
