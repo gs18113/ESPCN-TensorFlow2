@@ -78,8 +78,8 @@ def get_image_from_coco(coco, crop_size=256):
 
     original_image = tf.image.crop_to_bounding_box(image, offset_height, offset_width, crop_size, crop_size)
     downsampled_image = tf.image.resize(original_image, [downsampled_size, downsampled_size])
-    original_image = tf.divide(original_image, 255.0)
-    downsampled_image = tf.divide(downsampled_image, 255.0)
+    original_image = original_image / 127.5 - 1 
+    downsampled_image = downsampled_image / 127.5 - 1
     return downsampled_image, original_image
 
     
